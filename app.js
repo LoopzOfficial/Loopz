@@ -1,12 +1,23 @@
-import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    collection, 
+    addDoc, 
+    getDocs, 
+    query, 
+    orderBy, 
+    serverTimestamp,
+    doc,
+    updateDoc,
+    increment
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { auth, db } from "./firebase.js";
+import { auth, db, followUser, unfollowUser, isFollowing, getFollowCounts } from "./firebase.js";
 
-// CLOUDINARY CONFIG
 const CLOUDINARY_CLOUD_NAME = "pinn1l4h";
 const CLOUDINARY_UPLOAD_PRESET = "ck6jz3ui";
 
-// 1. UPDATE USERNAME & PROFILE PICTURE
+let currentFeedTab = "foryou"; // "foryou" or "following"
+
+// 1. UPDATE USER PROFILE (HANDLE & PFP)
 export async function updateUserProfile(newUsername, pfpFile) {
     const user = auth.currentUser;
     if (!user) return;
@@ -17,7 +28,6 @@ export async function updateUserProfile(newUsername, pfpFile) {
     try {
         let photoURL = user.photoURL || "";
 
-        // Upload avatar image to Cloudinary if selected
         if (pfpFile) {
             const formData = new FormData();
             formData.append("file", pfpFile);
@@ -34,7 +44,6 @@ export async function updateUserProfile(newUsername, pfpFile) {
             }
         }
 
-        // Save username and pfp URL to Firebase Auth
         await updateProfile(user, {
             displayName: newUsername || user.displayName,
             photoURL: photoURL
@@ -46,7 +55,7 @@ export async function updateUserProfile(newUsername, pfpFile) {
             const modal = document.getElementById("profile-modal");
             if (modal) modal.style.display = "none";
             location.reload();
-        }, 1000);
+        }, 800);
 
     } catch (err) {
         alert("Profile update error: " + err.message);
@@ -54,7 +63,7 @@ export async function updateUserProfile(newUsername, pfpFile) {
     }
 }
 
-// 2. UPLOAD VIDEO TO CLOUDINARY & SAVE TO FIRESTORE
+// 2. UPLOAD VIDEO
 export async function uploadVideoToLoopz(file, caption) {
     const user = auth.currentUser;
     const uploadStatus = document.getElementById("upload-status");
@@ -71,11 +80,11 @@ export async function uploadVideoToLoopz(file, caption) {
     }
 
     if (file.size > 50 * 1024 * 1024) {
-        alert("Video size is too large! Please choose a video under 50MB.");
+        alert("Video size is too large! Pick a file under 50MB.");
         return;
     }
 
-    if (uploadStatus) uploadStatus.innerText = "1/2 Uploading video file... ⏳";
+    if (uploadStatus) uploadStatus.innerText = "1/2 Uploading video... ⏳";
 
     const formData = new FormData();
     formData.append("file", file);
@@ -92,14 +101,14 @@ export async function uploadVideoToLoopz(file, caption) {
         if (data.error) throw new Error(data.error.message);
         if (!data.secure_url) throw new Error("Upload failed. Verify preset settings.");
 
-        if (uploadStatus) uploadStatus.innerText = "2/2 Saving to Loopz... ⚡";
+        if (uploadStatus) uploadStatus.innerText = "2/2 Saving post... ⚡";
 
         await addDoc(collection(db, "posts"), {
             videoUrl: data.secure_url,
             caption: caption || "",
             userId: user.uid,
-            username: user.displayName || "loopz_creator",
-            userPfp: user.photoURL || "https://api.dicebear.com/7.x/bottts/svg?seed=" + (user.displayName || "creator"),
+            username: user.displayName || "creator",
+            userPfp: user.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.displayName || "creator"}`,
             likes: 0,
             createdAt: serverTimestamp()
         });
@@ -109,8 +118,9 @@ export async function uploadVideoToLoopz(file, caption) {
         setTimeout(() => {
             const modal = document.getElementById("upload-modal");
             if (modal) modal.style.display = "none";
+            if (uploadStatus) uploadStatus.innerText = "";
             loadLoopzFeed();
-        }, 1200);
+        }, 1000);
 
     } catch (error) {
         alert("Upload error: " + error.message);
@@ -118,8 +128,9 @@ export async function uploadVideoToLoopz(file, caption) {
     }
 }
 
-// 3. FETCH AND DISPLAY LIVE FEED
-export async function loadLoopzFeed() {
+// 3. RENDER FEED
+export async function loadLoopzFeed(tab = currentFeedTab) {
+    currentFeedTab = tab;
     const feedContainer = document.getElementById("feed");
     if (!feedContainer) return;
 
@@ -127,40 +138,99 @@ export async function loadLoopzFeed() {
         const postsQuery = query(collection(db, "posts"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(postsQuery);
 
-        if (querySnapshot.empty) return;
+        if (querySnapshot.empty) {
+            feedContainer.innerHTML = `
+                <div class="video-card" style="display:flex; justify-content:center; align-items:center;">
+                    <p style="color:#888;">No loops posted yet. Tap + to post!</p>
+                </div>`;
+            return;
+        }
 
         feedContainer.innerHTML = "";
 
-        querySnapshot.forEach((docSnap) => {
+        for (const docSnap of querySnapshot.docs) {
             const post = docSnap.data();
-            const avatar = post.userPfp || "https://api.dicebear.com/7.x/bottts/svg?seed=" + post.username;
+            const postId = docSnap.id;
+            const avatar = post.userPfp || `https://api.dicebear.com/7.x/bottts/svg?seed=${post.username}`;
+            
+            const isOfficial = ["loopz", "loopzofficial"].includes(post.username.toLowerCase());
+            const badgeHTML = isOfficial ? `<span class="verified-badge">✔</span>` : ``;
+
+            const currentUser = auth.currentUser;
+            const isSelf = currentUser && currentUser.uid === post.userId;
+            const currentlyFollowing = await isFollowing(post.userId);
+
+            const followBtnHTML = isSelf ? '' : `
+                <button class="follow-btn ${currentlyFollowing ? 'following' : ''}" data-uid="${post.userId}">
+                    ${currentlyFollowing ? 'Following' : 'Follow'}
+                </button>
+            `;
 
             const card = document.createElement("div");
             card.className = "video-card";
             card.innerHTML = `
                 <video src="${post.videoUrl}" loop playsinline muted></video>
                 <div class="ui-overlay">
-                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                        <img src="${avatar}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid #a855f7;">
-                        <div class="username">@${post.username}</div>
+                    <div class="user-row">
+                        <img src="${avatar}" class="feed-avatar">
+                        <div class="username">@${post.username} ${badgeHTML}</div>
+                        ${followBtnHTML}
                     </div>
                     <div class="caption">${post.caption}</div>
                 </div>
                 <div class="action-sidebar">
-                    <button class="action-btn">⚡ <span>${post.likes || 0}</span></button>
+                    <button class="action-btn like-btn" data-id="${postId}">⚡ <span>${post.likes || 0}</span></button>
                     <button class="action-btn">💬 <span>0</span></button>
                     <button class="action-btn">🔁 <span>Share</span></button>
                 </div>
             `;
 
-            card.addEventListener("click", () => {
+            // Play/Pause on Video Tap
+            card.addEventListener("click", (e) => {
+                if (e.target.tagName === "BUTTON" || e.target.closest("button")) return;
                 const vid = card.querySelector("video");
                 vid.muted = false;
                 vid.paused ? vid.play() : vid.pause();
             });
 
+            // Follow Button Click Handler
+            const flwBtn = card.querySelector(".follow-btn");
+            if (flwBtn) {
+                flwBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    const targetUid = flwBtn.getAttribute("data-uid");
+                    if (flwBtn.classList.contains("following")) {
+                        await unfollowUser(targetUid);
+                        flwBtn.innerText = "Follow";
+                        flwBtn.classList.remove("following");
+                    } else {
+                        const success = await followUser(targetUid);
+                        if (success) {
+                            flwBtn.innerText = "Following";
+                            flwBtn.classList.add("following");
+                        }
+                    }
+                });
+            }
+
+            // Like Button Click Handler
+            const likeBtn = card.querySelector(".like-btn");
+            if (likeBtn) {
+                likeBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    try {
+                        const postRef = doc(db, "posts", postId);
+                        await updateDoc(postRef, { likes: increment(1) });
+                        const countSpan = likeBtn.querySelector("span");
+                        countSpan.innerText = parseInt(countSpan.innerText) + 1;
+                    } catch (err) {
+                        console.error("Like error:", err);
+                    }
+                });
+            }
+
             feedContainer.appendChild(card);
-        });
+        }
 
         setupScrollObserver();
     } catch (err) {
@@ -168,6 +238,7 @@ export async function loadLoopzFeed() {
     }
 }
 
+// 4. AUTO PLAY/PAUSE OBSERVER
 function setupScrollObserver() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -181,4 +252,5 @@ function setupScrollObserver() {
     document.querySelectorAll(".video-card").forEach(card => observer.observe(card));
 }
 
-window.addEventListener("DOMContentLoaded", loadLoopzFeed);
+// Load feed on open
+window.addEventListener("DOMContentLoaded", () => loadLoopzFeed("foryou"));
