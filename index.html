@@ -60,12 +60,35 @@
         </div>
     </div>
 
-    <!-- Application Script Module -->
+    <!-- Profile Edit Modal -->
+    <div class="modal-overlay" id="profile-modal" style="display: none;">
+        <div class="auth-card">
+            <h2 style="text-align: center;">Edit Profile</h2>
+            <p style="font-size: 12px; color: #aaa; text-align: center;">Change your username or profile photo.</p>
+
+            <div style="text-align: center; margin-bottom: 8px;">
+                <img id="current-pfp-preview" src="https://via.placeholder.com/80" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #a855f7;">
+            </div>
+
+            <label style="font-size: 11px; color: #aaa;">New Profile Photo:</label>
+            <input type="file" id="pfp-file-input" accept="image/*">
+
+            <label style="font-size: 11px; color: #aaa;">Username / Handle:</label>
+            <input type="text" id="profile-username-input" placeholder="New username...">
+
+            <div id="profile-status" style="font-size: 12px; text-align: center; color: #a855f7;"></div>
+
+            <button class="btn-primary" id="save-profile-btn">Save Profile 💾</button>
+            <button class="btn-primary" id="close-profile-btn" style="background: #333;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Application Modules & Handlers -->
     <script type="module">
         import { auth, signUpWithGoogle, signUpWithEmail } from './firebase.js';
-        import { uploadVideoToLoopz } from './app.js';
+        import { uploadVideoToLoopz, updateUserProfile } from './app.js';
 
-        // Auth Listeners
+        // Auth Event Handlers
         document.getElementById('google-signin-btn').addEventListener('click', signUpWithGoogle);
 
         document.getElementById('create-account-btn').addEventListener('click', () => {
@@ -109,11 +132,41 @@
             }
         });
 
-        // Profile Button / Auth Status Check
+        // Profile Modal Listeners
+        const profileBtn = document.getElementById('profile-btn');
+        const profileModal = document.getElementById('profile-modal');
+
+        profileBtn.addEventListener('click', () => {
+            if (!auth.currentUser) {
+                document.getElementById('auth-modal').style.display = 'flex';
+            } else {
+                document.getElementById('profile-username-input').value = auth.currentUser.displayName || "";
+                if (auth.currentUser.photoURL) {
+                    document.getElementById('current-pfp-preview').src = auth.currentUser.photoURL;
+                }
+                profileModal.style.display = 'flex';
+            }
+        });
+
+        document.getElementById('close-profile-btn').addEventListener('click', () => {
+            profileModal.style.display = 'none';
+        });
+
+        document.getElementById('save-profile-btn').addEventListener('click', () => {
+            const newUsername = document.getElementById('profile-username-input').value.trim();
+            const pfpInput = document.getElementById('pfp-file-input');
+            const pfpFile = pfpInput.files.length > 0 ? pfpInput.files[0] : null;
+
+            updateUserProfile(newUsername, pfpFile);
+        });
+
+        // Sync Auth State
         auth.onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('auth-modal').style.display = 'none';
-                document.getElementById('profile-btn').innerText = `@${user.displayName || user.email.split('@')[0]}`;
+                profileBtn.innerText = `@${user.displayName || user.email.split('@')[0]}`;
+            } else {
+                profileBtn.innerText = "👤 Profile";
             }
         });
     </script>
