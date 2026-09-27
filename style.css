@@ -1,188 +1,168 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
 }
 
-body, html {
-    width: 100%;
-    height: 100%;
-    background-color: #0B0B0E;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    overflow: hidden;
-    color: #fff;
+body { 
+    background-color: #000; 
+    color: #fff; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    overflow: hidden; 
 }
 
-/* Feed Container */
-.feed-container {
-    width: 100%;
-    height: calc(100vh - 65px);
-    overflow-y: scroll;
-    scroll-snap-type: y mandatory;
-    scrollbar-width: none;
+/* Vertical Snap Scroll Feed */
+#feed { 
+    height: 100vh; 
+    overflow-y: scroll; 
+    snap-type: y mandatory; 
+    scroll-snap-type: y mandatory; 
 }
 
-.feed-container::-webkit-scrollbar {
-    display: none;
+.video-card { 
+    height: 100vh; 
+    width: 100vw; 
+    snap-align: start; 
+    scroll-snap-align: start; 
+    position: relative; 
+    background: #111; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
 }
 
-.video-card {
-    width: 100%;
-    height: 100%;
-    scroll-snap-align: start;
-    position: relative;
-    background: #000;
+video { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
 }
 
-.video-card video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+/* On-Screen Text & Actions */
+.ui-overlay { 
+    position: absolute; 
+    bottom: 80px; 
+    left: 16px; 
+    z-index: 10; 
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8); 
 }
 
-/* Custom Header with Loopz Branding */
-.top-header {
-    position: absolute;
-    top: 20px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-    z-index: 20;
+.username { 
+    font-weight: bold; 
+    font-size: 16px; 
+    margin-bottom: 4px; 
+    color: #a855f7;
 }
 
-.logo {
-    font-weight: 900;
-    font-size: 22px;
-    letter-spacing: -1px;
-    background: linear-gradient(135deg, #A855F7 0%, #6366F1 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.caption { 
+    font-size: 14px; 
+    opacity: 0.9; 
 }
 
-/* Unique Action Sidebar (Not TikTok style) */
-.action-sidebar {
-    position: absolute;
-    right: 16px;
-    bottom: 30px;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    background: rgba(18, 18, 24, 0.6);
-    backdrop-filter: blur(12px);
-    padding: 12px 8px;
-    border-radius: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.action-sidebar { 
+    position: absolute; 
+    right: 12px; 
+    bottom: 100px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 16px; 
+    z-index: 10; 
 }
 
-.action-btn {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 22px;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+.action-btn { 
+    background: rgba(0,0,0,0.4); 
+    border: none; 
+    color: white; 
+    padding: 10px; 
+    border-radius: 50%; 
+    font-size: 18px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    cursor: pointer; 
 }
 
-.action-btn span {
-    font-size: 11px;
-    font-weight: 600;
-    color: #CCC;
+.action-btn span { 
+    font-size: 11px; 
+    margin-top: 2px; 
 }
 
-/* Bottom Navigation */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    height: 65px;
-    background: #0B0B0E;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    z-index: 100;
+/* App Bottom Navigation */
+.bottom-nav { 
+    position: fixed; 
+    bottom: 0; 
+    width: 100%; 
+    height: 60px; 
+    background: rgba(0,0,0,0.9); 
+    display: flex; 
+    justify-content: space-around; 
+    align-items: center; 
+    z-index: 20; 
+    border-top: 1px solid #222; 
 }
 
-/* Custom Electric Loopz Upload Button (Original Look) */
-.loopz-upload-btn {
-    width: 48px;
-    height: 34px;
-    background: linear-gradient(135deg, #7C3AED 0%, #3B82F6 100%);
-    border: none;
-    border-radius: 12px;
-    color: #FFF;
-    font-size: 22px;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 15px rgba(124, 58, 237, 0.5);
-    cursor: pointer;
+.nav-btn { 
+    background: none; 
+    border: none; 
+    color: #fff; 
+    font-size: 14px; 
+    cursor: pointer; 
 }
 
-/* Fullscreen Auth Modal */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(10px);
-    z-index: 200;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
+.loopz-upload-btn { 
+    background: linear-gradient(135deg, #a855f7, #ec4899); 
+    border: none; 
+    color: #fff; 
+    width: 46px; 
+    height: 32px; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    font-size: 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
 }
 
-.auth-card {
-    background: #141419;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 100%;
-    max-width: 360px;
-    padding: 24px;
-    border-radius: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+/* Modals */
+.modal-overlay { 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.85); 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    z-index: 100; 
+    padding: 20px; 
 }
 
-.auth-card input {
-    width: 100%;
-    padding: 12px 16px;
-    background: #1F1F28;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    color: #fff;
-    outline: none;
+.auth-card { 
+    background: #18181b; 
+    padding: 24px; 
+    border-radius: 16px; 
+    width: 100%; 
+    max-width: 360px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    border: 1px solid #27272a; 
 }
 
-.btn-primary {
-    background: #7C3AED;
-    color: #fff;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
+.auth-card input { 
+    background: #27272a; 
+    border: 1px solid #3f3f46; 
+    padding: 12px; 
+    border-radius: 8px; 
+    color: white; 
+    font-size: 14px; 
+    outline: none; 
 }
 
-.btn-google {
-    background: #fff;
-    color: #000;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    font-weight: bold;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
+.btn-primary { 
+    background: #a855f7; 
+    color: white; 
+    border: none; 
+    padding: 12px; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    cursor: pointer; 
 }
