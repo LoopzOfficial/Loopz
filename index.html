@@ -4,73 +4,243 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Loopz</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: #000; 
+            color: #fff; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            overflow: hidden; 
+        }
+
+        /* Video Feed Container */
+        #feed { 
+            height: 100vh; 
+            overflow-y: scroll; 
+            snap-type: y mandatory; 
+            scroll-snap-type: y mandatory; 
+        }
+
+        .video-card { 
+            height: 100vh; 
+            width: 100vw; 
+            snap-align: start; 
+            scroll-snap-align: start; 
+            position: relative; 
+            background: #111; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+
+        video { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+        }
+
+        /* Overlay UI Elements */
+        .ui-overlay { 
+            position: absolute; 
+            bottom: 80px; 
+            left: 16px; 
+            z-index: 10; 
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8); 
+        }
+
+        .username { 
+            font-weight: bold; 
+            font-size: 16px; 
+            margin-bottom: 4px; 
+            color: #a855f7;
+        }
+
+        .caption { 
+            font-size: 14px; 
+            opacity: 0.9; 
+        }
+
+        .action-sidebar { 
+            position: absolute; 
+            right: 12px; 
+            bottom: 100px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+            z-index: 10; 
+        }
+
+        .action-btn { 
+            background: rgba(0,0,0,0.4); 
+            border: none; 
+            color: white; 
+            padding: 10px; 
+            border-radius: 50%; 
+            font-size: 18px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            cursor: pointer; 
+        }
+
+        .action-btn span { 
+            font-size: 11px; 
+            margin-top: 2px; 
+        }
+
+        /* Navigation Bar */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            width: 100%; 
+            height: 60px; 
+            background: rgba(0,0,0,0.9); 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            z-index: 20; 
+            border-top: 1px solid #222; 
+        }
+
+        .nav-btn { 
+            background: none; 
+            border: none; 
+            color: #fff; 
+            font-size: 14px; 
+            cursor: pointer; 
+        }
+
+        .loopz-upload-btn { 
+            background: linear-gradient(135deg, #a855f7, #ec4899); 
+            border: none; 
+            color: #fff; 
+            width: 46px; 
+            height: 32px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+        }
+
+        /* Upload Modal */
+        .modal-overlay { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.85); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 100; 
+            padding: 20px; 
+        }
+
+        .auth-card { 
+            background: #18181b; 
+            padding: 24px; 
+            border-radius: 16px; 
+            width: 100%; 
+            max-width: 360px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            border: 1px solid #27272a; 
+        }
+
+        .auth-card input { 
+            background: #27272a; 
+            border: 1px solid #3f3f46; 
+            padding: 12px; 
+            border-radius: 8px; 
+            color: white; 
+            font-size: 14px; 
+            outline: none; 
+        }
+
+        .btn-primary { 
+            background: #a855f7; 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+    </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <div class="top-header">
-        <div class="logo">LOOPZ</div>
-        <button id="open-auth-btn" class="btn-primary" style="padding: 6px 14px; font-size: 12px;">Sign In</button>
-    </div>
-
-    <!-- Feed -->
-    <div class="feed-container" id="feed">
+    <!-- Main Mobile Feed -->
+    <div id="feed">
         <div class="video-card">
-            <video src="https://www.w3schools.com/html/mov_bbb.mp4" loop playsinline muted></video>
-            
-            <div class="action-sidebar">
-                <button class="action-btn">⚡ <span>1.4K</span></button>
-                <button class="action-btn">💬 <span>92</span></button>
-                <button class="action-btn">🔁 <span>Shared</span></button>
-            </div>
+            <p style="color: #666; font-size: 14px;">No loops posted yet. Tap + to upload!</p>
         </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="bottom-nav">
-        <button class="nav-item">Home</button>
+    <!-- Bottom Navigation Bar -->
+    <div class="bottom-nav">
+        <button class="nav-btn">🏠 Home</button>
         <button class="loopz-upload-btn">+</button>
-        <button class="nav-item" id="profile-username">Profile</button>
-    </nav>
+        <button class="nav-btn" id="profile-username">👤 Profile</button>
+    </div>
 
-    <!-- Authentication Modal (Sign Up / Sign In) -->
-    <div class="modal-overlay" id="auth-modal">
+    <!-- Upload Popup Modal -->
+    <div class="modal-overlay" id="upload-modal" style="display: none;">
         <div class="auth-card">
-            <h2 style="text-align: center;">Join Loopz</h2>
-            <p style="font-size: 12px; color: #aaa; text-align: center;">Sign up to share loops & interact.</p>
-            
-            <button class="btn-google" id="google-btn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
-                Continue with Google
-            </button>
+            <h2 style="text-align: center;">New Loop</h2>
+            <p style="font-size: 12px; color: #aaa; text-align: center;">Choose a video from your camera roll.</p>
 
-            <div style="text-align: center; font-size: 12px; color: #555;">OR</div>
+            <input type="file" id="video-file-input" accept="video/*">
+            <input type="text" id="video-caption-input" placeholder="Write a caption...">
 
-            <input type="text" id="signup-username" placeholder="Username">
-            <input type="email" id="signup-email" placeholder="Email address">
-            <input type="password" id="signup-password" placeholder="Password">
+            <div id="upload-status" style="font-size: 12px; text-align: center; color: #a855f7;"></div>
 
-            <button class="btn-primary" id="email-signup-btn">Create Account</button>
+            <button class="btn-primary" id="publish-loop-btn">Post Loop 🔁</button>
+            <button class="btn-primary" id="close-upload-btn" style="background: #333;">Cancel</button>
         </div>
     </div>
 
-    <!-- Load Firebase module script -->
+    <!-- Firebase Authentication & Database Module -->
+    <script type="module" src="./firebase.js"></script>
+    
+    <!-- Video Feed & Upload Engine -->
+    <script type="module" src="./app.js"></script>
+
+    <!-- Modal Trigger Controls -->
     <script type="module">
-        import { signUpWithEmail, signUpWithGoogle } from './firebase.js';
+        import { uploadVideoToLoopz } from './app.js';
 
-        document.getElementById('google-btn').addEventListener('click', signUpWithGoogle);
-        
-        document.getElementById('email-signup-btn').addEventListener('click', () => {
-            const username = document.getElementById('signup-username').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            signUpWithEmail(email, password, username);
-        });
+        const uploadModal = document.getElementById('upload-modal');
+        const uploadBtn = document.querySelector('.loopz-upload-btn');
+        const closeBtn = document.getElementById('close-upload-btn');
+        const publishBtn = document.getElementById('publish-loop-btn');
 
-        document.getElementById('open-auth-btn').addEventListener('click', () => {
-            document.getElementById('auth-modal').style.display = 'flex';
-        });
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', () => {
+                uploadModal.style.display = 'flex';
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                uploadModal.style.display = 'none';
+            });
+        }
+
+        if (publishBtn) {
+            publishBtn.addEventListener('click', () => {
+                const fileInput = document.getElementById('video-file-input');
+                const captionInput = document.getElementById('video-caption-input');
+                
+                if (fileInput.files.length > 0) {
+                    uploadVideoToLoopz(fileInput.files[0], captionInput.value);
+                } else {
+                    alert("Please pick a video file first!");
+                }
+            });
+        }
     </script>
 </body>
 </html>
