@@ -213,29 +213,35 @@ video {
     justify-content: center; 
     align-items: center; 
     z-index: 100; 
-    padding: 20px; 
 }
 
 .auth-card { 
     background: #18181b; 
     padding: 24px; 
     border-radius: 16px; 
-    width: 100%; 
+    width: 90%; 
     max-width: 360px; 
     display: flex; 
     flex-direction: column; 
-    gap: 12px; 
+    gap: 10px; 
     border: 1px solid #27272a; 
 }
 
-.auth-card input { 
+.auth-card input, .custom-textarea { 
     background: #27272a; 
     border: 1px solid #3f3f46; 
-    padding: 12px; 
+    padding: 10px; 
     border-radius: 8px; 
     color: white; 
     font-size: 14px; 
     outline: none; 
+    width: 100%;
+}
+
+.input-label {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 2px;
 }
 
 .btn-primary { 
@@ -246,4 +252,177 @@ video {
     border-radius: 8px; 
     font-weight: bold; 
     cursor: pointer; 
+}
+
+.btn-secondary {
+    background: #27272a;
+    color: #fff;
+    border: 1px solid #3f3f46;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: 1;
+    text-align: center;
+}
+
+/* Instagram-Style Profile Page Overlay */
+.profile-screen {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.profile-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #18181b;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.profile-header-title {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.profile-header-content {
+    padding: 16px;
+}
+
+.profile-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+/* Instagram Ring Border */
+.profile-avatar-wrapper {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888, #a855f7);
+    padding: 3px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-pfp {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #000;
+    background: #27272a;
+}
+
+.profile-stats-row {
+    display: flex;
+    flex: 1;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-num {
+    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #a1a1aa;
+}
+
+.profile-info-section {
+    margin-top: 12px;
+}
+
+.profile-display-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.profile-bio-text {
+    font-size: 13px;
+    color: #d4d4d8;
+    margin-top: 4px;
+    white-space: pre-line;
+}
+
+.profile-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.profile-tabs {
+    display: flex;
+    border-top: 1px solid #18181b;
+    border-bottom: 1px solid #18181b;
+    margin-top: 12px;
+}
+
+.profile-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #888;
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.profile-tab.active {
+    color: #fff;
+    border-bottom: 2px solid #fff;
+}
+
+/* 3-Column Video Grid */
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    padding-bottom: 70px;
+}
+
+.grid-item {
+    position: relative;
+    aspect-ratio: 1;
+    background: #18181b;
+    overflow: hidden;
+}
+
+.grid-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.grid-item-likes {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    background: rgba(0,0,0,0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
