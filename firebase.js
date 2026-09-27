@@ -1,24 +1,39 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+    getAuth, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    createUserWithEmailAndPassword, 
+    updateProfile 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    deleteDoc, 
+    getDoc, 
+    collection, 
+    query, 
+    where, 
+    getCountFromServer 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAdOlIbJaXzMymN3MlekGcFRexvIzm5woo",
-  authDomain: "loopz-c8941.firebaseapp.com",
-  projectId: "loopz-c8941",
-  storageBucket: "loopz-c8941.firebasestorage.app",
-  messagingSenderId: "1094837904577",
-  appId: "1:1094837904577:web:989d0381716e132feea040",
-  measurementId: "G-ZP53H4CZ9L"
+    apiKey: "AIzaSyAdOlIbJaXzMymN3MlekGcFRexvIzm5woo",
+    authDomain: "loopz-c8941.firebaseapp.com",
+    projectId: "loopz-c8941",
+    storageBucket: "loopz-c8941.firebasestorage.app",
+    messagingSenderId: "1094837904577",
+    appId: "1:1094837904577:web:989d0381716e132feea040",
+    measurementId: "G-ZP53H4CZ9L"
 };
 
-// Initialize Firebase & Firestore
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Google Auth Handler
+// AUTHENTICATION
 export async function signUpWithGoogle() {
     try {
         const result = await signInWithPopup(auth, googleProvider);
@@ -30,7 +45,6 @@ export async function signUpWithGoogle() {
     }
 }
 
-// Email Auth Handler
 export async function signUpWithEmail(email, password, username) {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -42,13 +56,19 @@ export async function signUpWithEmail(email, password, username) {
         alert("Sign-Up Error: " + error.message);
     }
 }
-import { doc, setDoc, deleteDoc, getDoc, collection, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Follow a user
+// FOLLOW SYSTEM
 export async function followUser(targetUserId) {
     const user = auth.currentUser;
-    if (!user) return alert("Sign in to follow creators!");
-    if (user.uid === targetUserId) return alert("You can't follow yourself!");
+    if (!user) {
+        alert("Please sign in to follow creators!");
+        document.getElementById('auth-modal').style.display = 'flex';
+        return false;
+    }
+    if (user.uid === targetUserId) {
+        alert("You cannot follow yourself!");
+        return false;
+    }
 
     const followId = `${user.uid}_${targetUserId}`;
     await setDoc(doc(db, "follows", followId), {
@@ -56,18 +76,18 @@ export async function followUser(targetUserId) {
         followingId: targetUserId,
         createdAt: new Date()
     });
+    return true;
 }
 
-// Unfollow a user
 export async function unfollowUser(targetUserId) {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) return false;
 
     const followId = `${user.uid}_${targetUserId}`;
     await deleteDoc(doc(db, "follows", followId));
+    return true;
 }
 
-// Check if currently following
 export async function isFollowing(targetUserId) {
     const user = auth.currentUser;
     if (!user) return false;
@@ -77,18 +97,22 @@ export async function isFollowing(targetUserId) {
     return snap.exists();
 }
 
-// Get Follower / Following Counts
 export async function getFollowCounts(userId) {
-    const followersQ = query(collection(db, "follows"), where("followingId", "==", userId));
-    const followingQ = query(collection(db, "follows"), where("followerId", "==", userId));
+    try {
+        const followersQ = query(collection(db, "follows"), where("followingId", "==", userId));
+        const followingQ = query(collection(db, "follows"), where("followerId", "==", userId));
 
-    const [followersSnap, followingSnap] = await Promise.all([
-        getCountFromServer(followersQ),
-        getCountFromServer(followingQ)
-    ]);
+        const [followersSnap, followingSnap] = await Promise.all([
+            getCountFromServer(followersQ),
+            getCountFromServer(followingQ)
+        ]);
 
-    return {
-        followers: followersSnap.data().count,
-        following: followingSnap.data().count
-    };
+        return {
+            followers: followersSnap.data().count,
+            following: followingSnap.data().count
+        };
+    } catch (err) {
+        console.error("Error fetching follow counts:", err);
+        return { followers: 0, following: 0 };
+    }
 }
