@@ -8,21 +8,28 @@
 </head>
 <body>
 
-    <!-- Main Feed -->
+    <!-- Top Feed Header -->
+    <div class="top-header">
+        <button class="feed-tab active" id="tab-foryou">For You</button>
+        <span style="color: #444;">|</span>
+        <button class="feed-tab" id="tab-following">Following</button>
+    </div>
+
+    <!-- Main Mobile Feed -->
     <div id="feed">
         <div class="video-card">
-            <p style="color: #666; font-size: 14px;">No loops posted yet. Tap + to upload!</p>
+            <p style="color: #666; font-size: 14px;">Loading Loopz feed... ⚡</p>
         </div>
     </div>
 
     <!-- Bottom Navigation Bar -->
     <div class="bottom-nav">
-        <button class="nav-btn">🏠 Home</button>
+        <button class="nav-btn" id="home-btn">🏠 Home</button>
         <button class="loopz-upload-btn">+</button>
         <button class="nav-btn" id="profile-btn">👤 Profile</button>
     </div>
 
-    <!-- Authentication Modal -->
+    <!-- Auth Modal -->
     <div class="modal-overlay" id="auth-modal" style="display: flex;">
         <div class="auth-card">
             <h2 style="text-align: center;">Join Loopz</h2>
@@ -60,14 +67,26 @@
         </div>
     </div>
 
-    <!-- Profile Edit Modal -->
+    <!-- Edit Profile Modal -->
     <div class="modal-overlay" id="profile-modal" style="display: none;">
         <div class="auth-card">
-            <h2 style="text-align: center;">Edit Profile</h2>
-            <p style="font-size: 12px; color: #aaa; text-align: center;">Change your username or profile photo.</p>
-
-            <div style="text-align: center; margin-bottom: 8px;">
+            <h2 style="text-align: center;">My Profile</h2>
+            
+            <div style="text-align: center; margin-bottom: 4px;">
                 <img id="current-pfp-preview" src="https://via.placeholder.com/80" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #a855f7;">
+            </div>
+
+            <!-- Follower/Following Counter -->
+            <div style="display: flex; justify-content: space-around; background: #27272a; padding: 10px; border-radius: 12px; margin-bottom: 4px; text-align: center;">
+                <div>
+                    <div id="stat-followers" style="font-weight: bold; font-size: 16px; color: #a855f7;">0</div>
+                    <div style="font-size: 11px; color: #aaa;">Followers</div>
+                </div>
+                <div style="border-right: 1px solid #3f3f46;"></div>
+                <div>
+                    <div id="stat-following" style="font-weight: bold; font-size: 16px; color: #a855f7;">0</div>
+                    <div style="font-size: 11px; color: #aaa;">Following</div>
+                </div>
             </div>
 
             <label style="font-size: 11px; color: #aaa;">New Profile Photo:</label>
@@ -83,12 +102,12 @@
         </div>
     </div>
 
-    <!-- Application Modules & Handlers -->
+    <!-- JavaScript Handlers -->
     <script type="module">
-        import { auth, signUpWithGoogle, signUpWithEmail } from './firebase.js';
-        import { uploadVideoToLoopz, updateUserProfile } from './app.js';
+        import { auth, signUpWithGoogle, signUpWithEmail, getFollowCounts } from './firebase.js';
+        import { uploadVideoToLoopz, updateUserProfile, loadLoopzFeed } from './app.js';
 
-        // Auth Event Handlers
+        // Auth Listeners
         document.getElementById('google-signin-btn').addEventListener('click', signUpWithGoogle);
 
         document.getElementById('create-account-btn').addEventListener('click', () => {
@@ -100,7 +119,6 @@
                 alert("Please fill in all fields!");
                 return;
             }
-
             signUpWithEmail(email, password, username);
         });
 
@@ -108,7 +126,23 @@
             document.getElementById('auth-modal').style.display = 'none';
         });
 
-        // Navigation & Modal Triggers
+        // Feed Tabs
+        const tabForYou = document.getElementById('tab-foryou');
+        const tabFollowing = document.getElementById('tab-following');
+
+        tabForYou.addEventListener('click', () => {
+            tabForYou.classList.add('active');
+            tabFollowing.classList.remove('active');
+            loadLoopzFeed('foryou');
+        });
+
+        tabFollowing.addEventListener('click', () => {
+            tabFollowing.classList.add('active');
+            tabForYou.classList.remove('active');
+            loadLoopzFeed('following');
+        });
+
+        // Navigation
         document.querySelector('.loopz-upload-btn').addEventListener('click', () => {
             if (!auth.currentUser) {
                 document.getElementById('auth-modal').style.display = 'flex';
@@ -132,18 +166,25 @@
             }
         });
 
-        // Profile Modal Listeners
+        // Profile Modal Logic
         const profileBtn = document.getElementById('profile-btn');
         const profileModal = document.getElementById('profile-modal');
 
-        profileBtn.addEventListener('click', () => {
+        profileBtn.addEventListener('click', async () => {
             if (!auth.currentUser) {
                 document.getElementById('auth-modal').style.display = 'flex';
             } else {
-                document.getElementById('profile-username-input').value = auth.currentUser.displayName || "";
-                if (auth.currentUser.photoURL) {
-                    document.getElementById('current-pfp-preview').src = auth.currentUser.photoURL;
+                const user = auth.currentUser;
+                document.getElementById('profile-username-input').value = user.displayName || "";
+                if (user.photoURL) {
+                    document.getElementById('current-pfp-preview').src = user.photoURL;
                 }
+
+                // Fetch follower/following counts
+                const counts = await getFollowCounts(user.uid);
+                document.getElementById('stat-followers').innerText = counts.followers;
+                document.getElementById('stat-following').innerText = counts.following;
+
                 profileModal.style.display = 'flex';
             }
         });
@@ -160,7 +201,7 @@
             updateUserProfile(newUsername, pfpFile);
         });
 
-        // Sync Auth State
+        // Auth State Observer
         auth.onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('auth-modal').style.display = 'none';
@@ -169,13 +210,6 @@
                 profileBtn.innerText = "👤 Profile";
             }
         });
-    </script> 
-    <!-- Top Header Navigation -->
-<div class="top-header">
-    <button class="feed-tab active" id="tab-foryou">For You</button>
-    <span style="color: #444;">|</span>
-    <button class="feed-tab" id="tab-following">Following</button>
-</div>
-
+    </script>
 </body>
 </html>
