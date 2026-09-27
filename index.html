@@ -4,175 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Loopz</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background-color: #000; 
-            color: #fff; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            overflow: hidden; 
-        }
-
-        /* Video Feed Container */
-        #feed { 
-            height: 100vh; 
-            overflow-y: scroll; 
-            snap-type: y mandatory; 
-            scroll-snap-type: y mandatory; 
-        }
-
-        .video-card { 
-            height: 100vh; 
-            width: 100vw; 
-            snap-align: start; 
-            scroll-snap-align: start; 
-            position: relative; 
-            background: #111; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-        }
-
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-        }
-
-        /* Overlay UI Elements */
-        .ui-overlay { 
-            position: absolute; 
-            bottom: 80px; 
-            left: 16px; 
-            z-index: 10; 
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8); 
-        }
-
-        .username { 
-            font-weight: bold; 
-            font-size: 16px; 
-            margin-bottom: 4px; 
-            color: #a855f7;
-        }
-
-        .caption { 
-            font-size: 14px; 
-            opacity: 0.9; 
-        }
-
-        .action-sidebar { 
-            position: absolute; 
-            right: 12px; 
-            bottom: 100px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 16px; 
-            z-index: 10; 
-        }
-
-        .action-btn { 
-            background: rgba(0,0,0,0.4); 
-            border: none; 
-            color: white; 
-            padding: 10px; 
-            border-radius: 50%; 
-            font-size: 18px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            cursor: pointer; 
-        }
-
-        .action-btn span { 
-            font-size: 11px; 
-            margin-top: 2px; 
-        }
-
-        /* Navigation Bar */
-        .bottom-nav { 
-            position: fixed; 
-            bottom: 0; 
-            width: 100%; 
-            height: 60px; 
-            background: rgba(0,0,0,0.9); 
-            display: flex; 
-            justify-content: space-around; 
-            align-items: center; 
-            z-index: 20; 
-            border-top: 1px solid #222; 
-        }
-
-        .nav-btn { 
-            background: none; 
-            border: none; 
-            color: #fff; 
-            font-size: 14px; 
-            cursor: pointer; 
-        }
-
-        .loopz-upload-btn { 
-            background: linear-gradient(135deg, #a855f7, #ec4899); 
-            border: none; 
-            color: #fff; 
-            width: 46px; 
-            height: 32px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            font-size: 20px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-        }
-
-        /* Upload Modal */
-        .modal-overlay { 
-            position: fixed; 
-            inset: 0; 
-            background: rgba(0,0,0,0.85); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 100; 
-            padding: 20px; 
-        }
-
-        .auth-card { 
-            background: #18181b; 
-            padding: 24px; 
-            border-radius: 16px; 
-            width: 100%; 
-            max-width: 360px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
-            border: 1px solid #27272a; 
-        }
-
-        .auth-card input { 
-            background: #27272a; 
-            border: 1px solid #3f3f46; 
-            padding: 12px; 
-            border-radius: 8px; 
-            color: white; 
-            font-size: 14px; 
-            outline: none; 
-        }
-
-        .btn-primary { 
-            background: #a855f7; 
-            color: white; 
-            border: none; 
-            padding: 12px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Main Mobile Feed -->
+    <!-- Main Feed -->
     <div id="feed">
         <div class="video-card">
             <p style="color: #666; font-size: 14px;">No loops posted yet. Tap + to upload!</p>
@@ -183,10 +19,32 @@
     <div class="bottom-nav">
         <button class="nav-btn">🏠 Home</button>
         <button class="loopz-upload-btn">+</button>
-        <button class="nav-btn" id="profile-username">👤 Profile</button>
+        <button class="nav-btn" id="profile-btn">👤 Profile</button>
     </div>
 
-    <!-- Upload Popup Modal -->
+    <!-- Authentication Modal -->
+    <div class="modal-overlay" id="auth-modal" style="display: flex;">
+        <div class="auth-card">
+            <h2 style="text-align: center;">Join Loopz</h2>
+            <p style="font-size: 12px; color: #aaa; text-align: center;">Sign up to share loops & interact.</p>
+
+            <button id="google-signin-btn" class="btn-primary" style="background:#fff; color:#000; display:flex; align-items:center; justify-content:center; gap:8px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+                Continue with Google
+            </button>
+
+            <p style="text-align:center; font-size:12px; color:#888;">OR</p>
+
+            <input type="text" id="auth-username" placeholder="Username">
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-password" placeholder="Password">
+
+            <button id="create-account-btn" class="btn-primary">Create Account</button>
+            <button id="close-auth-btn" style="background:none; border:none; color:#888; font-size:12px; cursor:pointer;">Close</button>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
     <div class="modal-overlay" id="upload-modal" style="display: none;">
         <div class="auth-card">
             <h2 style="text-align: center;">New Loop</h2>
@@ -202,45 +60,62 @@
         </div>
     </div>
 
-    <!-- Firebase Authentication & Database Module -->
-    <script type="module" src="./firebase.js"></script>
-    
-    <!-- Video Feed & Upload Engine -->
-    <script type="module" src="./app.js"></script>
-
-    <!-- Modal Trigger Controls -->
+    <!-- Application Script Module -->
     <script type="module">
+        import { auth, signUpWithGoogle, signUpWithEmail } from './firebase.js';
         import { uploadVideoToLoopz } from './app.js';
 
-        const uploadModal = document.getElementById('upload-modal');
-        const uploadBtn = document.querySelector('.loopz-upload-btn');
-        const closeBtn = document.getElementById('close-upload-btn');
-        const publishBtn = document.getElementById('publish-loop-btn');
+        // Auth Listeners
+        document.getElementById('google-signin-btn').addEventListener('click', signUpWithGoogle);
 
-        if (uploadBtn) {
-            uploadBtn.addEventListener('click', () => {
-                uploadModal.style.display = 'flex';
-            });
-        }
+        document.getElementById('create-account-btn').addEventListener('click', () => {
+            const username = document.getElementById('auth-username').value.trim();
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
 
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                uploadModal.style.display = 'none';
-            });
-        }
+            if (!username || !email || !password) {
+                alert("Please fill in all fields!");
+                return;
+            }
 
-        if (publishBtn) {
-            publishBtn.addEventListener('click', () => {
-                const fileInput = document.getElementById('video-file-input');
-                const captionInput = document.getElementById('video-caption-input');
-                
-                if (fileInput.files.length > 0) {
-                    uploadVideoToLoopz(fileInput.files[0], captionInput.value);
-                } else {
-                    alert("Please pick a video file first!");
-                }
-            });
-        }
+            signUpWithEmail(email, password, username);
+        });
+
+        document.getElementById('close-auth-btn').addEventListener('click', () => {
+            document.getElementById('auth-modal').style.display = 'none';
+        });
+
+        // Navigation & Modal Triggers
+        document.querySelector('.loopz-upload-btn').addEventListener('click', () => {
+            if (!auth.currentUser) {
+                document.getElementById('auth-modal').style.display = 'flex';
+            } else {
+                document.getElementById('upload-modal').style.display = 'flex';
+            }
+        });
+
+        document.getElementById('close-upload-btn').addEventListener('click', () => {
+            document.getElementById('upload-modal').style.display = 'none';
+        });
+
+        document.getElementById('publish-loop-btn').addEventListener('click', () => {
+            const fileInput = document.getElementById('video-file-input');
+            const captionInput = document.getElementById('video-caption-input');
+            
+            if (fileInput.files.length > 0) {
+                uploadVideoToLoopz(fileInput.files[0], captionInput.value);
+            } else {
+                alert("Please pick a video file first!");
+            }
+        });
+
+        // Profile Button / Auth Status Check
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('auth-modal').style.display = 'none';
+                document.getElementById('profile-btn').innerText = `@${user.displayName || user.email.split('@')[0]}`;
+            }
+        });
     </script>
 </body>
 </html>
