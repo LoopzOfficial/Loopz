@@ -29,6 +29,87 @@
         <button class="nav-btn" id="profile-btn">👤 Profile</button>
     </div>
 
+    <!-- Instagram-Style Profile Screen Overlay -->
+    <div class="modal-overlay" id="profile-modal" style="display: none;">
+        <div class="profile-screen">
+            <!-- Top Nav -->
+            <div class="profile-nav-bar">
+                <button class="icon-btn" id="close-profile-btn">✕</button>
+                <div class="profile-header-title" id="profile-header-username">@username</div>
+                <button class="icon-btn">⚙️</button>
+            </div>
+
+            <!-- Profile Info Header -->
+            <div class="profile-header-content">
+                <div class="profile-top-row">
+                    <!-- Avatar Ring -->
+                    <div class="profile-avatar-wrapper">
+                        <img id="profile-pfp" src="https://via.placeholder.com/80" class="profile-pfp">
+                    </div>
+
+                    <!-- Posts / Followers / Following Stats -->
+                    <div class="profile-stats-row">
+                        <div class="stat-box">
+                            <span class="stat-num" id="stat-posts-count">0</span>
+                            <span class="stat-label">Posts</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-num" id="stat-followers-count">0</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-num" id="stat-following-count">0</span>
+                            <span class="stat-label">Following</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Name & Bio -->
+                <div class="profile-info-section">
+                    <div class="profile-display-name" id="profile-display-name">Username</div>
+                    <div class="profile-bio-text" id="profile-bio">Welcome to my Loopz profile! ⚡</div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="profile-actions-row">
+                    <button class="btn-secondary" id="open-edit-profile-btn">Edit Profile</button>
+                    <button class="btn-secondary" id="share-profile-btn">Share Profile</button>
+                </div>
+            </div>
+
+            <!-- Grid Tabs -->
+            <div class="profile-tabs">
+                <button class="profile-tab active">▦</button>
+            </div>
+
+            <!-- 3-Column Video Grid -->
+            <div class="profile-grid" id="user-posts-grid">
+                <!-- User loops render here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="edit-profile-modal" style="display: none;">
+        <div class="auth-card">
+            <h2 style="text-align: center; font-size: 18px;">Edit Profile</h2>
+
+            <label class="input-label">Profile Photo</label>
+            <input type="file" id="edit-pfp-file" accept="image/*">
+
+            <label class="input-label">Username / Handle</label>
+            <input type="text" id="edit-username-input" placeholder="Username">
+
+            <label class="input-label">Bio</label>
+            <textarea id="edit-bio-input" rows="3" placeholder="Write a bio..." class="custom-textarea"></textarea>
+
+            <div id="edit-profile-status" style="font-size: 12px; text-align: center; color: #a855f7;"></div>
+
+            <button class="btn-primary" id="save-profile-btn">Save Changes 💾</button>
+            <button class="btn-primary" id="close-edit-modal-btn" style="background: #333;">Cancel</button>
+        </div>
+    </div>
+
     <!-- Auth Modal -->
     <div class="modal-overlay" id="auth-modal" style="display: flex;">
         <div class="auth-card">
@@ -67,47 +148,12 @@
         </div>
     </div>
 
-    <!-- Edit Profile Modal -->
-    <div class="modal-overlay" id="profile-modal" style="display: none;">
-        <div class="auth-card">
-            <h2 style="text-align: center;">My Profile</h2>
-            
-            <div style="text-align: center; margin-bottom: 4px;">
-                <img id="current-pfp-preview" src="https://via.placeholder.com/80" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #a855f7;">
-            </div>
-
-            <!-- Follower/Following Counter -->
-            <div style="display: flex; justify-content: space-around; background: #27272a; padding: 10px; border-radius: 12px; margin-bottom: 4px; text-align: center;">
-                <div>
-                    <div id="stat-followers" style="font-weight: bold; font-size: 16px; color: #a855f7;">0</div>
-                    <div style="font-size: 11px; color: #aaa;">Followers</div>
-                </div>
-                <div style="border-right: 1px solid #3f3f46;"></div>
-                <div>
-                    <div id="stat-following" style="font-weight: bold; font-size: 16px; color: #a855f7;">0</div>
-                    <div style="font-size: 11px; color: #aaa;">Following</div>
-                </div>
-            </div>
-
-            <label style="font-size: 11px; color: #aaa;">New Profile Photo:</label>
-            <input type="file" id="pfp-file-input" accept="image/*">
-
-            <label style="font-size: 11px; color: #aaa;">Username / Handle:</label>
-            <input type="text" id="profile-username-input" placeholder="New username...">
-
-            <div id="profile-status" style="font-size: 12px; text-align: center; color: #a855f7;"></div>
-
-            <button class="btn-primary" id="save-profile-btn">Save Profile 💾</button>
-            <button class="btn-primary" id="close-profile-btn" style="background: #333;">Cancel</button>
-        </div>
-    </div>
-
-    <!-- JavaScript Handlers -->
+    <!-- JS Module Handlers -->
     <script type="module">
-        import { auth, signUpWithGoogle, signUpWithEmail, getFollowCounts } from './firebase.js';
-        import { uploadVideoToLoopz, updateUserProfile, loadLoopzFeed } from './app.js';
+        import { auth, signUpWithGoogle, signUpWithEmail, getUserProfileData } from './firebase.js';
+        import { uploadVideoToLoopz, updateUserProfile, loadLoopzFeed, openProfileView } from './app.js';
 
-        // Auth Listeners
+        // Auth Event Handlers
         document.getElementById('google-signin-btn').addEventListener('click', signUpWithGoogle);
 
         document.getElementById('create-account-btn').addEventListener('click', () => {
@@ -142,7 +188,7 @@
             loadLoopzFeed('following');
         });
 
-        // Navigation
+        // Upload Navigation
         document.querySelector('.loopz-upload-btn').addEventListener('click', () => {
             if (!auth.currentUser) {
                 document.getElementById('auth-modal').style.display = 'flex';
@@ -166,42 +212,48 @@
             }
         });
 
-        // Profile Modal Logic
+        // Profile Navigation & Modal Triggers
         const profileBtn = document.getElementById('profile-btn');
-        const profileModal = document.getElementById('profile-modal');
 
-        profileBtn.addEventListener('click', async () => {
+        profileBtn.addEventListener('click', () => {
             if (!auth.currentUser) {
                 document.getElementById('auth-modal').style.display = 'flex';
             } else {
-                const user = auth.currentUser;
-                document.getElementById('profile-username-input').value = user.displayName || "";
-                if (user.photoURL) {
-                    document.getElementById('current-pfp-preview').src = user.photoURL;
-                }
-
-                // Fetch follower/following counts
-                const counts = await getFollowCounts(user.uid);
-                document.getElementById('stat-followers').innerText = counts.followers;
-                document.getElementById('stat-following').innerText = counts.following;
-
-                profileModal.style.display = 'flex';
+                openProfileView(auth.currentUser.uid);
             }
         });
 
         document.getElementById('close-profile-btn').addEventListener('click', () => {
-            profileModal.style.display = 'none';
+            document.getElementById('profile-modal').style.display = 'none';
+        });
+
+        // Edit Profile Triggers
+        document.getElementById('open-edit-profile-btn').addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            document.getElementById('edit-username-input').value = user.displayName || "";
+            
+            const profileData = await getUserProfileData(user.uid);
+            document.getElementById('edit-bio-input').value = profileData?.bio || "";
+
+            document.getElementById('edit-profile-modal').style.display = 'flex';
+        });
+
+        document.getElementById('close-edit-modal-btn').addEventListener('click', () => {
+            document.getElementById('edit-profile-modal').style.display = 'none';
         });
 
         document.getElementById('save-profile-btn').addEventListener('click', () => {
-            const newUsername = document.getElementById('profile-username-input').value.trim();
-            const pfpInput = document.getElementById('pfp-file-input');
+            const newUsername = document.getElementById('edit-username-input').value.trim();
+            const newBio = document.getElementById('edit-bio-input').value.trim();
+            const pfpInput = document.getElementById('edit-pfp-file');
             const pfpFile = pfpInput.files.length > 0 ? pfpInput.files[0] : null;
 
-            updateUserProfile(newUsername, pfpFile);
+            updateUserProfile(newUsername, newBio, pfpFile);
         });
 
-        // Auth State Observer
+        // Sync Auth State
         auth.onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById('auth-modal').style.display = 'none';
