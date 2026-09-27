@@ -3,27 +3,29 @@ import {
     addDoc, 
     getDocs, 
     query, 
+    where,
     orderBy, 
     serverTimestamp,
     doc,
+    setDoc,
     updateDoc,
     increment
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { auth, db, followUser, unfollowUser, isFollowing, getFollowCounts } from "./firebase.js";
+import { auth, db, followUser, unfollowUser, isFollowing, getFollowCounts, getUserProfileData } from "./firebase.js";
 
 const CLOUDINARY_CLOUD_NAME = "pinn1l4h";
 const CLOUDINARY_UPLOAD_PRESET = "ck6jz3ui";
 
-let currentFeedTab = "foryou"; // "foryou" or "following"
+let currentFeedTab = "foryou";
 
-// 1. UPDATE USER PROFILE (HANDLE & PFP)
-export async function updateUserProfile(newUsername, pfpFile) {
+// 1. UPDATE USER PROFILE (HANDLE, PFP, BIO)
+export async function updateUserProfile(newUsername, bioText, pfpFile) {
     const user = auth.currentUser;
     if (!user) return;
 
-    const profileStatus = document.getElementById("profile-status");
-    if (profileStatus) profileStatus.innerText = "Updating profile... ⏳";
+    const profileStatus = document.getElementById("edit-profile-status");
+    if (profileStatus) profileStatus.innerText = "Saving profile... ⏳";
 
     try {
         let photoURL = user.photoURL || "";
@@ -44,17 +46,26 @@ export async function updateUserProfile(newUsername, pfpFile) {
             }
         }
 
+        // Save to Firebase Auth
         await updateProfile(user, {
             displayName: newUsername || user.displayName,
             photoURL: photoURL
         });
 
+        // Save Bio & Profile to Firestore
+        await setDoc(doc(db, "users", user.uid), {
+            username: newUsername || user.displayName,
+            photoURL: photoURL,
+            bio: bioText || "",
+            uid: user.uid
+        }, { merge: true });
+
         if (profileStatus) profileStatus.innerText = "Profile updated! 🚀";
 
         setTimeout(() => {
-            const modal = document.getElementById("profile-modal");
-            if (modal) modal.style.display = "none";
-            location.reload();
+            document.getElementById("edit-profile-modal").style.display = "none";
+            if (profileStatus) profileStatus.innerText = "";
+            openProfileView(user.uid);
         }, 800);
 
     } catch (err) {
@@ -63,7 +74,70 @@ export async function updateUserProfile(newUsername, pfpFile) {
     }
 }
 
-// 2. UPLOAD VIDEO
+// 2. OPEN INSTAGRAM-STYLE PROFILE PAGE
+export async function openProfileView(userId) {
+    const user = auth.currentUser;
+    const profileModal = document.getElementById("profile-modal");
+    if (!profileModal) return;
+
+    profileModal.style.display = "flex";
+
+    // Fetch Stats
+    const stats = await getFollowCounts(userId);
+    document.getElementById("stat-posts-count").innerText = stats.posts;
+    document.getElementById("stat-followers-count").innerText = stats.followers;
+    document.getElementById("stat-following-count").innerText = stats.following;
+
+    // Fetch Profile Details
+    const profileData = await getUserProfileData(userId);
+    const username = profileData?.username || user?.displayName || "creator";
+    const bio = profileData?.bio || "Welcome to my Loopz profile! ⚡";
+    const photoURL = profileData?.photoURL || user?.photoURL || `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`;
+
+    document.getElementById("profile-header-username").innerText = `@${username}`;
+    document.getElementById("profile-display-name").innerText = username;
+    document.getElementById("profile-bio").innerText = bio;
+    document.getElementById("profile-pfp").src = photoURL;
+
+    // Render User Posts Grid
+    loadUserPostsGrid(userId);
+}
+
+// 3. LOAD USER POSTS IN 3-COLUMN GRID
+async function loadUserPostsGrid(userId) {
+    const gridContainer = document.getElementById("user-posts-grid");
+    if (!gridContainer) return;
+
+    gridContainer.innerHTML = `<p style="color:#666; font-size:12px; grid-column: span 3; text-align:center; padding: 20px;">Loading loops...</p>`;
+
+    try {
+        const q = query(collection(db, "posts"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            gridContainer.innerHTML = `<p style="color:#666; font-size:12px; grid-column: span 3; text-align:center; padding: 20px;">No loops posted yet.</p>`;
+            return;
+        }
+
+        gridContainer.innerHTML = "";
+
+        querySnapshot.forEach((docSnap) => {
+            const post = docSnap.data();
+            const gridItem = document.createElement("div");
+            gridItem.className = "grid-item";
+            gridItem.innerHTML = `
+                <video src="${post.videoUrl}#t=0.1" preload="metadata"></video>
+                <div class="grid-item-likes">⚡ ${post.likes || 0}</div>
+            `;
+            gridContainer.appendChild(gridItem);
+        });
+    } catch (err) {
+        console.error("Error loading profile grid:", err);
+        gridContainer.innerHTML = `<p style="color:#666; font-size:12px; grid-column: span 3; text-align:center;">Failed to load posts.</p>`;
+    }
+}
+
+// 4. UPLOAD VIDEO
 export async function uploadVideoToLoopz(file, caption) {
     const user = auth.currentUser;
     const uploadStatus = document.getElementById("upload-status");
@@ -128,7 +202,7 @@ export async function uploadVideoToLoopz(file, caption) {
     }
 }
 
-// 3. RENDER FEED
+// 5. RENDER MAIN FEED
 export async function loadLoopzFeed(tab = currentFeedTab) {
     currentFeedTab = tab;
     const feedContainer = document.getElementById("feed");
@@ -185,7 +259,6 @@ export async function loadLoopzFeed(tab = currentFeedTab) {
                 </div>
             `;
 
-            // Play/Pause on Video Tap
             card.addEventListener("click", (e) => {
                 if (e.target.tagName === "BUTTON" || e.target.closest("button")) return;
                 const vid = card.querySelector("video");
@@ -193,7 +266,6 @@ export async function loadLoopzFeed(tab = currentFeedTab) {
                 vid.paused ? vid.play() : vid.pause();
             });
 
-            // Follow Button Click Handler
             const flwBtn = card.querySelector(".follow-btn");
             if (flwBtn) {
                 flwBtn.addEventListener("click", async (e) => {
@@ -213,7 +285,6 @@ export async function loadLoopzFeed(tab = currentFeedTab) {
                 });
             }
 
-            // Like Button Click Handler
             const likeBtn = card.querySelector(".like-btn");
             if (likeBtn) {
                 likeBtn.addEventListener("click", async (e) => {
@@ -238,7 +309,6 @@ export async function loadLoopzFeed(tab = currentFeedTab) {
     }
 }
 
-// 4. AUTO PLAY/PAUSE OBSERVER
 function setupScrollObserver() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -252,5 +322,4 @@ function setupScrollObserver() {
     document.querySelectorAll(".video-card").forEach(card => observer.observe(card));
 }
 
-// Load feed on open
 window.addEventListener("DOMContentLoaded", () => loadLoopzFeed("foryou"));
