@@ -37,6 +37,13 @@ const googleProvider = new GoogleAuthProvider();
 export async function signUpWithGoogle() {
     try {
         const result = await signInWithPopup(auth, googleProvider);
+        await setDoc(doc(db, "users", result.user.uid), {
+            username: result.user.displayName || "creator",
+            photoURL: result.user.photoURL || "",
+            bio: "Welcome to my Loopz profile! ⚡",
+            uid: result.user.uid
+        }, { merge: true });
+        
         alert(`Welcome, ${result.user.displayName || 'Creator'}!`);
         const modal = document.getElementById('auth-modal');
         if (modal) modal.style.display = 'none';
@@ -49,11 +56,33 @@ export async function signUpWithEmail(email, password, username) {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: username });
+        
+        await setDoc(doc(db, "users", userCredential.user.uid), {
+            username: username,
+            photoURL: "",
+            bio: "Welcome to my Loopz profile! ⚡",
+            uid: userCredential.user.uid
+        });
+
         alert(`Account created! Welcome @${username}`);
         const modal = document.getElementById('auth-modal');
         if (modal) modal.style.display = 'none';
     } catch (error) {
         alert("Sign-Up Error: " + error.message);
+    }
+}
+
+// USER DATA FETCH
+export async function getUserProfileData(userId) {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userId));
+        if (userDoc.exists()) {
+            return userDoc.data();
+        }
+        return null;
+    } catch (e) {
+        console.error("Error fetching user profile:", e);
+        return null;
     }
 }
 
@@ -101,18 +130,21 @@ export async function getFollowCounts(userId) {
     try {
         const followersQ = query(collection(db, "follows"), where("followingId", "==", userId));
         const followingQ = query(collection(db, "follows"), where("followerId", "==", userId));
+        const postsQ = query(collection(db, "posts"), where("userId", "==", userId));
 
-        const [followersSnap, followingSnap] = await Promise.all([
+        const [followersSnap, followingSnap, postsSnap] = await Promise.all([
             getCountFromServer(followersQ),
-            getCountFromServer(followingQ)
+            getCountFromServer(followingQ),
+            getCountFromServer(postsQ)
         ]);
 
         return {
             followers: followersSnap.data().count,
-            following: followingSnap.data().count
+            following: followingSnap.data().count,
+            posts: postsSnap.data().count
         };
     } catch (err) {
-        console.error("Error fetching follow counts:", err);
-        return { followers: 0, following: 0 };
+        console.error("Error fetching stats:", err);
+        return { followers: 0, following: 0, posts: 0 };
     }
 }
