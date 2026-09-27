@@ -1,15 +1,16 @@
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { auth, db } from "./firebase.js";
 
-// YOUR CLOUDINARY CONFIG (Pre-filled with your details)
+// CLOUDINARY CONFIG
 const CLOUDINARY_CLOUD_NAME = "pinn1l4h";
 const CLOUDINARY_UPLOAD_PRESET = "ck6jz3ui";
 
-// 1. UPLOAD VIDEO TO CLOUDINARY & SAVE TO FIRESTORE
+// 1. UPLOAD VIDEO FILE TO CLOUDINARY AND SAVE METADATA TO FIRESTORE
 export async function uploadVideoToLoopz(file, caption) {
     const user = auth.currentUser;
     if (!user) {
-        alert("Please sign in first to post a loop!");
+        alert("Please sign in to post a loop!");
+        document.getElementById("auth-modal").style.display = "flex";
         return;
     }
 
@@ -26,7 +27,6 @@ export async function uploadVideoToLoopz(file, caption) {
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
     try {
-        // Upload video file directly to Cloudinary
         const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`, {
             method: "POST",
             body: formData
@@ -35,12 +35,11 @@ export async function uploadVideoToLoopz(file, caption) {
         const data = await response.json();
 
         if (!data.secure_url) {
-            throw new Error("Cloudinary upload failed. Check your preset settings.");
+            throw new Error("Cloudinary upload failed. Check preset configuration.");
         }
 
         const videoUrl = data.secure_url;
 
-        // Save post details to Firebase Firestore
         await addDoc(collection(db, "posts"), {
             videoUrl: videoUrl,
             caption: caption || "",
@@ -55,7 +54,7 @@ export async function uploadVideoToLoopz(file, caption) {
         setTimeout(() => {
             const modal = document.getElementById("upload-modal");
             if (modal) modal.style.display = "none";
-            loadLoopzFeed(); // Reload feed with newly posted video
+            loadLoopzFeed();
         }, 1200);
 
     } catch (error) {
@@ -64,7 +63,7 @@ export async function uploadVideoToLoopz(file, caption) {
     }
 }
 
-// 2. FETCH REAL-TIME POSTS & RENDER FEED
+// 2. FETCH REAL-TIME POSTS FROM FIRESTORE AND BUILD FEED
 export async function loadLoopzFeed() {
     const feedContainer = document.getElementById("feed");
     if (!feedContainer) return;
@@ -74,10 +73,10 @@ export async function loadLoopzFeed() {
         const querySnapshot = await getDocs(postsQuery);
 
         if (querySnapshot.empty) {
-            return; // Keeps default demo video if database is empty
+            return;
         }
 
-        feedContainer.innerHTML = ""; // Clear demo feed
+        feedContainer.innerHTML = "";
 
         querySnapshot.forEach((docSnap) => {
             const post = docSnap.data();
@@ -97,7 +96,6 @@ export async function loadLoopzFeed() {
                 </div>
             `;
 
-            // Tap video to toggle play/pause & unmute
             card.addEventListener("click", () => {
                 const vid = card.querySelector("video");
                 vid.muted = false;
@@ -113,7 +111,7 @@ export async function loadLoopzFeed() {
     }
 }
 
-// 3. AUTO PLAY/PAUSE VIDEOS ON SCROLL
+// AUTO PLAY/PAUSE ON SCROLL
 function setupScrollObserver() {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -131,5 +129,4 @@ function setupScrollObserver() {
     document.querySelectorAll(".video-card").forEach(card => observer.observe(card));
 }
 
-// Load videos as soon as the app opens
 window.addEventListener("DOMContentLoaded", loadLoopzFeed);
