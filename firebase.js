@@ -42,3 +42,53 @@ export async function signUpWithEmail(email, password, username) {
         alert("Sign-Up Error: " + error.message);
     }
 }
+import { doc, setDoc, deleteDoc, getDoc, collection, query, where, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Follow a user
+export async function followUser(targetUserId) {
+    const user = auth.currentUser;
+    if (!user) return alert("Sign in to follow creators!");
+    if (user.uid === targetUserId) return alert("You can't follow yourself!");
+
+    const followId = `${user.uid}_${targetUserId}`;
+    await setDoc(doc(db, "follows", followId), {
+        followerId: user.uid,
+        followingId: targetUserId,
+        createdAt: new Date()
+    });
+}
+
+// Unfollow a user
+export async function unfollowUser(targetUserId) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const followId = `${user.uid}_${targetUserId}`;
+    await deleteDoc(doc(db, "follows", followId));
+}
+
+// Check if currently following
+export async function isFollowing(targetUserId) {
+    const user = auth.currentUser;
+    if (!user) return false;
+
+    const followId = `${user.uid}_${targetUserId}`;
+    const snap = await getDoc(doc(db, "follows", followId));
+    return snap.exists();
+}
+
+// Get Follower / Following Counts
+export async function getFollowCounts(userId) {
+    const followersQ = query(collection(db, "follows"), where("followingId", "==", userId));
+    const followingQ = query(collection(db, "follows"), where("followerId", "==", userId));
+
+    const [followersSnap, followingSnap] = await Promise.all([
+        getCountFromServer(followersQ),
+        getCountFromServer(followingQ)
+    ]);
+
+    return {
+        followers: followersSnap.data().count,
+        following: followingSnap.data().count
+    };
+}
